@@ -1,0 +1,20 @@
+{
+    "name": "softlabs/docmail",
+    "description": "API wrapper for docmail",
+    "authors": [
+        {
+            "name": "Kanav Kapoor",
+            "email": "kanav@innotec.co.uk"
+        }
+    ],
+    "require": {
+        "php": ">=7.0",
+        "illuminate/support": "5.8.x"
+    },
+    "autoload": {
+        "psr-4": {
+            "Softlabs\\Docmail\\": "src/"
+        }
+    },
+    "minimum-stability": "dev"
+}
