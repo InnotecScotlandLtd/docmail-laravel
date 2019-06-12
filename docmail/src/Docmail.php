@@ -12,15 +12,42 @@ class Docmail {
     private $mailingGUID;
     private $templateGUID;
 
-    // Complex methods (multiple API calls)
+    /**
+     * UC First for Multi-Byte String
+     * @param  string $string
+     * @return string
+     */
+    private function mbUcfirst($string)
+    {
+        return mb_strtoupper(mb_substr($string, 0, 1)) . mb_substr($string, 1);
+    }
 
-    public static function sendToSingelAddress($data = [], $options = []) {
+    private function sanatizeParameters($parameters)
+    {
+        foreach($parameters as $key => $parameter){
+            unset($parameters[$key]);
+            $parameters[$this->mbUcfirst($key)] = $parameter;
+        }
 
-        $options = array_merge($data, $options);
+        return $parameters;
+    }
+
+    public function sendToSingleAddress($data = [], $options = []) {
+        $options = $this->sanatizeParameters( array_merge($data, $options) );
+        
+        $options["MailingGUID"] = DocmailAPI::createMailingNew($options);
+
+        $isAddressAdded = DocmailAPI::addAddressNew($options);
+        
+        $templateGUID = DocmailAPI::addTemplateFileNew($options);
+
+        $isProcessed = DocmailAPI::processMailingNew($options);
+
+
+
         $options = self::processParameterNames($options);
 
         try {
-
             DocmailAPI::validateCall(['CreateMailing'], $options);
             $mailingGUID = DocmailAPI::CreateMailing($options);
             $options["MailingGUID"] = $mailingGUID;
@@ -36,6 +63,35 @@ class Docmail {
         } catch (\Exception $e) {
             throw new \Exception($e->getMessage());
         }
+
+        return $result;
+    }
+    
+
+
+    // Complex methods (multiple API calls)
+    public static function sendToSingelAddress($data = [], $options = []) {
+
+        $options = array_merge($data, $options);
+
+        $options = self::processParameterNames($options);
+
+        // try {
+            DocmailAPI::validateCall(['CreateMailing'], $options);
+            $mailingGUID = DocmailAPI::CreateMailing($options);
+            $options["MailingGUID"] = $mailingGUID;
+
+            DocmailAPI::validateCall(['AddAddress', 'AddTemplateFile', 'ProcessMailing'], $options);
+
+            $result = DocmailAPI::AddAddress($options);
+
+            $templateGUID = DocmailAPI::AddTemplateFile($options);
+
+            $result = DocmailAPI::ProcessMailing($options);
+
+        /*} catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }*/
 
         return $result;
 
