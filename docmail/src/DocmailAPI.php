@@ -6,14 +6,13 @@ use Exception;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Validator;
-// use Softlabs\Docmail\Docmailing\Nusoap\NusoapClient;
-
-require_once 'Docmailing/nusoap.php';
-// require_once("Docmailing/Docmailing.php");
+use nusoap_client;
 
 class DocmailAPI {
 
     private static $validateOnly = false;
+
+    private $options = [];
 
     /**
      * Default option values
@@ -75,42 +74,14 @@ class DocmailAPI {
         "CanBeginOnBack"      => ""
     ];
 
-    // Single API call methods
-
-    /**
-     * CreateMailing API call
-     *
-     * @param  array   $options 
-     * @return string  Mailing GUID
-     */
-    public static function CreateMailing($options = []) {
-
-        $messages = [
-            'MailingName'       => 'MailingName is required',
-            'IsMono'            => 'IsMono is required',
-            'IsDuplex'          => 'IsDuplex is required',
-            'DeliveryType'      => 'DeliveryType is required',
-            'AddressNameFormat' => 'AddressNameFormat is required',
-            'ProductType'       => 'ProductType is required',
-
-        ];
-
-        $rules = [
-            'MailingName'       => 'required',
-            'IsMono'            => 'required',
-            'IsDuplex'          => 'required',
-            'DeliveryType'      => 'required',
-            'AddressNameFormat' => 'required',
-            'ProductType'       => 'required',
-        ];
-
-        $result = self::apiCall("CreateMailing", $options);
-        $mailingGUID = self::GetFld($result["CreateMailingResult"],"MailingGUID");
-        return $mailingGUID;
-
+    public function __construct($options = [])
+    {
+        if($options){
+            $this->options = $options;
+        }
     }
 
-    public static function createMailingNew($options = [])
+    public function createMailing()
     {
         $messages = [
             'MailingName'       => 'MailingName is required',
@@ -130,20 +101,13 @@ class DocmailAPI {
             'ProductType'       => 'required',
         ];
 
-        $result = self::connectToDocmail('CreateMailing', $options, $rules, $messages);
+        $result = $this->connectToDocmail('CreateMailing', $this->options, $rules, $messages);
 
-        return self::GetFld($result, "MailingGUID");
+        return $this->getFieldResponse($result, "MailingGUID");
     }
 
-
-    /**
-     * GetStatus API call
-     *
-     * @param  array   $options 
-     * @return string  Status
-     */
-    public static function GetStatus($options) {
-
+    public function getStatus()
+    {
         $messages = [
             'MailingGUID' => 'MailingGUID is required',
         ];
@@ -152,13 +116,9 @@ class DocmailAPI {
             'MailingGUID'     => 'required',
         ];
 
-        if (is_array($options) == false) {
-            $options = ["MailingGUID" => $options];
-        }
+        $result = $this->connectToDocmail('GetStatus', $this->options);
 
-        $result = self::apiCall("GetStatus", $options, $rules, $messages);
-        $status = self::GetFld($result["GetStatusResult"],"Status");
-        return $status;
+        return $this->getFieldResponse($result, "Status");
     }
 
     /**
@@ -167,13 +127,11 @@ class DocmailAPI {
      * @param  array   $options 
      * @return string  Status
      */
-    public static function GetBalance($options) {
-        $result = self::apiCall("GetBalance", $options);
-        $status = $result["GetBalanceResult"];
-        return $status;
+    public function getBalance() {
+        return $this->connectToDocmail('GetBalance', $this->options);
     }
 
-    public static function addAddressNew($options)
+    public function addAddress()
     {
         $rules = [
             'MailingGUID' => 'required',
@@ -185,38 +143,14 @@ class DocmailAPI {
             'Address1'    => 'Address1 is required',
         ];
 
-        $result = self::connectToDocmail('AddAddress', $options, $rules, $messages);
+        $result = $this->connectToDocmail('AddAddress', $this->options, $rules, $messages);
 
-        return self::GetFld($result, "Success") === 'True';
-
+        return $this->getFieldResponse($result, "Success");
     }
 
-    /**
-     * AddAddress API call
-     *
-     * @param  array   $options 
-     * @return bool  True is successful
-     */
-    public static function AddAddress($options) {
-
-        $messages = [
-            'MailingGUID' => 'MailingGUID is required',
-            'Address1' => 'Address1 is required',
-        ];
-
-        $rules = [
-            'MailingGUID'     => 'required',
-            'Address1' => 'required',
-        ];
-
-        $result = self::apiCall("AddAddress", $options, $rules, $messages);
-        $success = self::GetFld($result["AddAddressResult"],"Success");
-        return $success === 'True';
-    }
-
-    private static function connectToDocmail($slug, $options, $rules = [], $messages = [])
+    private function connectToDocmail($slug, $options, $rules = [], $messages = [])
     {
-        $options = self::expandOptions($options, $rules);
+        $options = $this->expandOptions($options, $rules);
 
         self::validateOptions($options, $rules, $messages);
         
@@ -226,15 +160,15 @@ class DocmailAPI {
 
         $result = $response["{$slug}Result"];
 
-        self::throwExceptionIfErrorInResponse($result);
+        $this->throwExceptionIfErrorInResponse($result);
 
         return $result;
     }
 
-    public static function addTemplateFileNew($options)
+    public function addTemplateFile()
     {
         $messages = [
-            'MailingGUID'  => 'MailingGUID is required',
+            'MailingGUID' => 'MailingGUID is required',
             "FileData"     => 'FileData is required',
             "DocumentType" => 'DocumentType is required',
             "FileName"     => 'FileName is required',
@@ -249,6 +183,8 @@ class DocmailAPI {
             "TemplateName" => 'required',
         ];
 
+        $options = $this->options;
+
         if (array_key_exists('FilePath', $options)) {
             $options['FileData'] = base64_encode(File::get($options['FilePath']));
             $options['FileName'] = self::fileInfo($options['FilePath'])['full_name'];
@@ -256,9 +192,9 @@ class DocmailAPI {
             unset($options['FilePath']);
         }
         
-        $result = self::connectToDocmail('AddTemplateFile', $options, $rules, $messages);
-
-        return self::GetFld($result, "TemplateGUID");
+        $result = $this->connectToDocmail('AddTemplateFile', $options, $rules, $messages);
+        
+        return $this->getFieldResponse($result, "TemplateGUID");
     }
 
     /**
@@ -279,82 +215,7 @@ class DocmailAPI {
         return $file;
     }
 
-
-    /**
-     * AddTemplateFile API call
-     *
-     * @param  array   $options 
-     * @return string  Template GUID
-     */
-    public static function AddTemplateFile($options) {
-
-        $messages = [
-            'MailingGUID'  => 'MailingGUID is required',
-            "FileData"     => 'FileData is required',
-            "DocumentType" => 'DocumentType is required',
-            "FileName"     => 'FileName is required',
-            "TemplateName" => 'TemplateName is required',
-        ];
-
-        $rules = [
-            'MailingGUID'     => 'required',
-            "FileData" => 'required',
-            "DocumentType" => 'required',
-            "FileName" => 'required',
-            "TemplateName" => 'required',
-        ];
-
-        if (array_key_exists('FilePath', $options)) {
-            $hdl = fopen($options['FilePath'], "rb");
-            $content = base64_encode(fread($hdl, filesize($options['FilePath'])));
-            fclose($hdl);
-
-            $options['FileData'] = $content;
-            $pathinfo = pathinfo($options['FilePath']);
-            $options['FileName'] = $pathinfo['filename'] . ( $pathinfo['extension'] === null ? "" : "." . $pathinfo['extension']);
-
-            unset($options['FilePath']);
-        }
-
-        $result = self::apiCall("AddTemplateFile", $options, $rules, $messages);
-
-        $templateGUID = self::GetFld($result["AddTemplateFileResult"],"TemplateGUID");
-        return $templateGUID;
-    }
-
-    /**
-     * ProcessMailing API call
-     *
-     * @param  array   $options 
-     * @return string  Mailing GUID
-     */
-    public static function ProcessMailing($options = []) {
-
-        $messages = [
-            'MailingName'       => 'MailingName is required',
-            'IsMono'            => 'IsMono is required',
-            'IsDuplex'          => 'IsDuplex is required',
-            'DeliveryType'      => 'DeliveryType is required',
-            'AddressNameFormat' => 'AddressNameFormat is required',
-            'ProductType'       => 'ProductType is required',
-        ];
-
-        $rules = [
-            'MailingName'       => 'required',
-            'IsMono'            => 'required',
-            'IsDuplex'          => 'required',
-            'DeliveryType'      => 'required',
-            'AddressNameFormat' => 'required',
-            'ProductType'       => 'required',
-        ];
-
-        $result = self::apiCall("ProcessMailing", $options);
-        $success = self::GetFld($result["ProcessMailingResult"],"Success");
-        return $success == "True";
-
-    }
-
-    public static function processMailingNew($options = [])
+    public function processMailing()
     {
         $messages = [
             'MailingName'       => 'MailingName is required',
@@ -374,80 +235,30 @@ class DocmailAPI {
             'ProductType'       => 'required',
         ];
 
-        $result = self::connectToDocmail('ProcessMailing', $options, $rules, $messages);
+        $result = $this->connectToDocmail('ProcessMailing', $this->options, $rules, $messages);
 
-        return self::GetFld($result, "Success") === 'True';
+        return $this->getFieldResponse($result, "Success");
+    }
+
+    public function getTemplateGUID()
+    {
+        return $this->options['TemplateGUID'] ?? null;
     }
 
     private static function connectToApi($url, $slug, $options, $timeout = null)
     {
-        $client = new \nusoap_client($url, true);
+        $client = new nusoap_client($url, true);
 
         $timeout = $timeout ?? self::$defaults['timeout'];
 
-        // Increase soap client timeout
         $client->timeout = $timeout;
         
-        // Increase php script server timeout
         set_time_limit($timeout);
 
         return $client->call($slug, $options);
     }
 
-
-    /**
-     * Make a Docmal API call
-     *
-     * @param  string  $func
-     * @param  array   $options Option array that had been passed to the caller method
-     * @param  array   $rules Validation rules for Validator
-     * @param  array   $messages Validation messages for Validator
-     * @return array   Result of the API call
-     */
-    public static function apiCall($func, $options, $rules = [], $messages = [])
-    {
-
-        // Merge default values into $options array
-        $options = self::expandOptions($options, $rules);
-
-        // Validate options
-        self::validateOptions($options, $rules, $messages);
-
-        if (self::$validateOnly) {
-            return true;
-        }
-
-        $client = new \nusoap_client($options['TestMode'] ? $options['wsdl_test'] : $options['wsdl_live'], true);
-
-        // Increase soap client timeout
-        $client->timeout = $options['timeout'];
-        // Increase php script server timeout
-        set_time_limit($options['timeout']);
-
-        $result = $client->call($func, $options);
-
-        self::CheckError($result[$func . "Result"]);   //parse & check error fields from result as described above
-
-        return $result;
-
-    }
-
     // Low level methods
-
-    /**
-     * Validates options against API functions.
-     *
-     * @param  array  $options
-     * @param  array  $rules
-     * @return array
-     */
-    public static function validateCall($funcs, $options) {
-        self::$validateOnly = true;
-        foreach ($funcs as $func) {
-            self::$func($options);
-        }
-        self::$validateOnly = false;
-    }
 
     /**
      * Validates options.
@@ -478,7 +289,7 @@ class DocmailAPI {
      * @param  array  $rules
      * @return array
      */
-    private static function expandOptions($options, $rules) {
+    private function expandOptions($options, $rules) {
 
         // Add default validation rules to $rules parameter array
         $rules = $rules + self::$validationRules;
@@ -502,10 +313,11 @@ class DocmailAPI {
         return $options;
     }
 
-    private static function throwExceptionIfErrorInResponse($response){
-        if ($errorCode = self::GetFld($response, "Error code")) {
-            $errorName    = self::GetFld($response, "Error code string");
-            $errorMessage = self::GetFld($response, "Error message");
+    private function throwExceptionIfErrorInResponse($response){
+
+        if ($errorCode = $this->getFieldResponse($response, "Error code")) {
+            $errorName    = $this->getFieldResponse($response, "Error code string");
+            $errorMessage = $this->getFieldResponse($response, "Error message");
 
             throw new Exception("Softlabs Docmail error - Code: " . $errorCode . "; Message:" . $errorName." - ".$errorMessage);
 
@@ -515,25 +327,20 @@ class DocmailAPI {
     // These functions are copied from the example code
 
 
-    private static function CheckError($Res){
-        // print "Checking for errors<br>";
-        //check for  the keys 'Error code', 'Error code string' and 'Error message' to test/report errors
-        $errCode = self::GetFld($Res,"Error code");
-        if ($errCode) {
-            $errName = self::GetFld($Res,"Error code string");
-            $errMsg = self::GetFld($Res,"Error message");
-            // print 'ErrCode '; print_r($errCode); print "<br>";
-            // print 'ErrName '; print_r($errName); print "<br>";
-            // print 'ErrMsg '; print_r($errMsg); print "<br>";
+    private function getFieldResponse($response, $fieldName)
+    {
+        $lines = explode("\n", $response);
+        
+        for ( $lineCounter=0; $lineCounter < count($lines); $lineCounter+=1){
+            
+            $fields = explode(":", $lines[$lineCounter]);
 
-            var_dump($Res);
-
-            throw new Exception("Softlabs Docmail error - Code: " . $errCode . "; Message:" . $errName." - ".$errMsg);
-
+            if ($fields[0] == $fieldName)   {
+                return ltrim($fields[1], " ");
+            }
         }
-        // print "No error<br>";
     }
-
+    
     private static function GetFld($FldList,$FldName){
         // calls return a multi-line string structured as :
         // [KEY]: [VALUE][carriage return][line feed][KEY]: [VALUE][carriage return][line feed][KEY]: [VALUE][carriage return][line feed][KEY]: [VALUE]

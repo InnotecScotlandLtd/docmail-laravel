@@ -5,203 +5,135 @@ namespace Softlabs\Docmail;
 use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
-use Softlabs\Docmail\DocmailAPI as DocmailAPI;
+use Illuminate\Support\Facades\View;
 
-class Docmail {
+class Docmail extends DocmailAPIMutators {
 
-    private $mailingGUID;
-    private $templateGUID;
+    use Helpers;
 
     /**
-     * UC First for Multi-Byte String
-     * @param  string $string
+     * MailGUID of order
+     * @var string
+     */
+    private $mailingGUID;
+    
+    /**
+     * TemplateGUID of the order
+     * @var string
+     */
+    private $templateGUID;
+
+    public function __construct($options)
+    {
+        $this->options = $this->sanatizeParameters($options);
+    }
+
+    /**
+     * Get status of an order
+     * @param  array  $data
      * @return string
      */
-    private function mbUcfirst($string)
+    public function getStatus($data = [])
     {
-        return mb_strtoupper(mb_substr($string, 0, 1)) . mb_substr($string, 1);
+        $this->refreshOptions($data);
+
+        return $this->docmailApiSingleton()->getStatus();
     }
 
-    private function sanatizeParameters($parameters)
-    {
-        foreach($parameters as $key => $parameter){
-            unset($parameters[$key]);
-            $parameters[$this->mbUcfirst($key)] = $parameter;
-        }
-
-        return $parameters;
-    }
-
-    public function sendToSingleAddress($data = [], $options = []) {
-        $options = $this->sanatizeParameters( array_merge($data, $options) );
+    /**
+     * Get balance of user
+     * @param  array  $data]
+     * @return float
+     */
+    public function getBalance($data = []) {
+        $this->refreshOptions($data);
         
-        $options["MailingGUID"] = DocmailAPI::createMailingNew($options);
+        $balanceExploded = explode('Current balance: ', $this->docmailApiSingleton()->getBalance());
 
-        $isAddressAdded = DocmailAPI::addAddressNew($options);
+        return (float) end($balanceExploded);
+    }
+
+    /**
+     * Check balance of user, and send email if mimimum is not maintained
+     * @param  boolean  sendEmail
+     * @param  array  $data
+     * @return array
+     */
+    public function checkBalance($sendEmail = true, $data = []) {
         
-        $templateGUID = DocmailAPI::addTemplateFileNew($options);
+        $this->refreshOptions($data);
 
-        $isProcessed = DocmailAPI::processMailingNew($options);
+        $balance        = self::gbp($this->getBalance($data));
+        $minimumBalance = self::gbp(Config::get('docmail.MinimumBalance'));
 
-
-
-        $options = self::processParameterNames($options);
-
-        try {
-            DocmailAPI::validateCall(['CreateMailing'], $options);
-            $mailingGUID = DocmailAPI::CreateMailing($options);
-            $options["MailingGUID"] = $mailingGUID;
-
-            DocmailAPI::validateCall(['AddAddress', 'AddTemplateFile', 'ProcessMailing'], $options);
-
-            $result = DocmailAPI::AddAddress($options);
-
-            $templateGUID = DocmailAPI::AddTemplateFile($options);
-
-            $result = DocmailAPI::ProcessMailing($options);
-
-        } catch (\Exception $e) {
-            throw new \Exception($e->getMessage());
-        }
-
-        return $result;
-    }
-    
-
-
-    // Complex methods (multiple API calls)
-    public static function sendToSingelAddress($data = [], $options = []) {
-
-        $options = array_merge($data, $options);
-
-        $options = self::processParameterNames($options);
-
-        // try {
-            DocmailAPI::validateCall(['CreateMailing'], $options);
-            $mailingGUID = DocmailAPI::CreateMailing($options);
-            $options["MailingGUID"] = $mailingGUID;
-
-            DocmailAPI::validateCall(['AddAddress', 'AddTemplateFile', 'ProcessMailing'], $options);
-
-            $result = DocmailAPI::AddAddress($options);
-
-            $templateGUID = DocmailAPI::AddTemplateFile($options);
-
-            $result = DocmailAPI::ProcessMailing($options);
-
-        /*} catch (\Exception $e) {
-            throw new \Exception($e->getMessage());
-        }*/
-
-        return $result;
-
-    }
-
-    public static function getBalance($data = [], $options = []) {
-
-        $options = array_merge($data, $options);
-        $options = self::processParameterNames($options);
-
-        try {
-            DocmailAPI::validateCall(['GetBalance'], $options);
-            $result = (float)str_replace("Current balance: ", "", DocmailAPI::GetBalance($options));
-        } catch (\Exception $e) {
-            throw new \Exception($e->getMessage());
-        }
-
-        return $result;
-    }
-
-    public static function checkBalance($data = [], $options = []) {
-
-        $balance = self::getBalance($data, $options);
-
-        $balanceIsOK = true;
+        $isMimumumMaintained = $balance > $minimumBalance;
         
-        if ($balance < Config::get('docmail.MinimumBalance')) {
-            $balanceIsOK    = false;
-            
-            $minimumBalance = self::gbp(Config::get('docmail.MinimumBalance'));
-            $balance        = self::gbp($balance);
-
-            $body = "Current Docmail balance ({$balance}) is less than minimum balance ({$minimumBalance}).";
-
-            Mail::raw($body, function ($message){
-                $message->to(Config::get('docmail.AlertEmail'));
-                $message->subject('Docmail Balance Alert');
-            });
-
-            /*\View::addNamespace('package', __DIR__.'/../views');
-            \Mail::send('package::alert-email', ["currentBalance" => $balance, "minimumBalance" => Config::get('docmail.MinimumBalance')], function($message)
-            {
-                $message->to(Config::get('docmail.AlertEmail'))->subject('Docmail balance alert');
-            });*/
+        if($sendEmail && !$isMimumumMaintained){
+            $this->sendBalanceInsufficentEmail();
         }
 
-        $ret = [
-            'balanceIsOK' => $balanceIsOK,
+        return [
+            'isMimumumMaintained' => $isMimumumMaintained,
             'balance'     => $balance,
         ];
-
-        return $ret;
     }
 
-
+    /**
+     * Get Mailing GUID of the order
+     * @return string
+     */
     public function getMailingGUID() {
         return $this->mailingGUID;
     }
 
+    /**
+     * Get Template GUID of the order
+     * @return string
+     */
     public function getTemplateGUID() {
         return $this->templateGUID;
     }
 
-    private static function processParameterNames($parameters) {
+    /**
+     * Set MailGUID of order
+     * @param string $mailingGUID
+     */
+    public function setMailingGUID($mailingGUID)
+    {
+        $this->options['MailingGUID'] = $mailingGUID;
+        
+        $this->mailingGUID = $mailingGUID;
 
-        // Names that should be changed to fit our standards
-        $namesToConvert = [
-            'PrintColour' => function($value){ return ["IsMono" => !$value]; },
-            'PrintDuplex' => function($value){ return ["IsDuplex" => $value]; },
-            'FirstClass'  => function($value){ return $value == true ? ["DeliveryType" => "First"] : []; },
-            'PostCode'    => function($value){ return ["Address5" => $value]; },
-        ];
-
-        // Convert names to UpperCamelCase
-        $processedParameters = [];
-        foreach ($parameters as $key => $value) {
-            $newKey = mb_strtoupper(mb_substr($key, 0, 1)) . mb_substr($key, 1);
-            $processedParameters[$newKey] = $value;
-        }
-
-        // Convert names 
-        foreach ($namesToConvert as $key => $func) {
-            if (array_key_exists($key, $processedParameters) ) {
-                $value = $processedParameters[$key];
-                unset($processedParameters[$key]);
-                $processedParameters = array_merge($processedParameters, $func($value));
-            }
-        }
-
-        return $processedParameters;
+        $this->refreshDocmailApiSingleton();
     }
 
     /**
-     * Converts a value to a presentable GBP format.
-     *
-     * @param  integer $data The data to be converted to GBP format.
-     * @param  string $returnVal A value to return if the conversion is impossible.
-     * @return string The formatted GBP string.
+     * Set Template GUID in the class
+     * @param string $templateGUID
      */
-    private static function gbp($data, $returnVal='-')
+    public function setTemplateGUID($templateGUID)
     {
-        if (is_null($data)) {
-            return $returnVal;
-        }
+        $this->options['TemplateGUID'] = $templateGUID;
+        
+        $this->templateGUID = $templateGUID;
 
-        if ( ! is_float($data)) {
-            $data = floatval($data);
-        }
+        $this->refreshDocmailApiSingleton();
+    }
 
-        return (is_numeric($data) ? '£' . number_format($data, 2) : $data);
+    /**
+     * Send email to user containing details of 
+     * his current balance and require balance
+     * @param  float $currentBalance
+     * @param  float $minimumBalance
+     * @return return boolean
+     */
+    private function sendBalanceInsufficentEmail($currentBalance, $minimumBalance)
+    {
+        View::addNamespace('package', __DIR__.'/../views');
+
+        return Mail::send('package::alert-email', compact('currentBalance', 'minimumBalance'), function($message) {
+            $message->to(Config::get('docmail.AlertEmail'))->subject('Docmail balance alert');
+        });
     }
 }
 

@@ -9,7 +9,8 @@
     ],
     "require": {
         "php": ">=7.0",
-        "illuminate/support": "5.8.x"
+        "illuminate/support": "5.8.x",
+        "econea/nusoap": "0.9.5.1"
     },
     "autoload": {
         "psr-4": {
