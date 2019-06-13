@@ -12,8 +12,8 @@ class DocmailAPIValidation {
             [
                 'Username'            => 'required|max:100',
                 'Password'            => 'required|max:100',
-                'wsdl_test'           => 'required|max:100',
-                'wsdl_live'           => 'required|max:100',
+                'Wsdl_test'           => 'required|max:100',
+                'Wsdl_live'           => 'required|max:100',
                 'timeout'             => 'required|max:100',
                 "TestMode"            => "required",
                 "CustomerApplication" => "",
@@ -28,8 +28,8 @@ class DocmailAPIValidation {
             [
                 'Username'            => 'Username is required',
                 'Password'            => 'Password is required',
-                'wsdl_test'           => 'Test WSDL is required',
-                'wsdl_live'           => 'Live WSDL is required',
+                'Wsdl_test'           => 'Test WSDL is required',
+                'Wsdl_live'           => 'Live WSDL is required',
                 'timeout'             => 'Timeout is required',
                 "TestMode"            => "TestMode is Required",
                 "CustomerApplication" => "",
@@ -95,6 +95,7 @@ class DocmailAPIValidation {
 
         'ProcessMailing' => [
             [
+                'MailingGUID'       => 'required',
                 'MailingName'       => 'required',
                 'IsMono'            => 'required',
                 'IsDuplex'          => 'required',
@@ -103,6 +104,7 @@ class DocmailAPIValidation {
                 'ProductType'       => 'required',
             ],
             [
+                'MailingGUID'       => 'MailingGUID is required',
                 'MailingName'       => 'MailingName is required',
                 'IsMono'            => 'IsMono is required',
                 'IsDuplex'          => 'IsDuplex is required',

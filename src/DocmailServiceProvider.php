@@ -1,6 +1,6 @@
 <?php
 
-namespace GoSoftware\Docmail;
+namespace Softlabs\Docmail;
 
 use Illuminate\Support\ServiceProvider;
 

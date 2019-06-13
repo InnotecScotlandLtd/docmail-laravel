@@ -24,9 +24,17 @@ class Docmail extends DocmailAPIMutators {
      */
     private $templateGUID;
 
-    public function __construct($options)
+    /**
+     * Default configuration options arra
+     * @var array
+     */
+    public $options = [];
+
+    public function __construct($options = [])
     {
-        $this->options = $this->sanatizeParameters($options);
+        if($options){
+            $this->options = $this->sanatizeParameters($options);
+        }
     }
 
     /**
@@ -63,19 +71,19 @@ class Docmail extends DocmailAPIMutators {
     public function checkBalance($sendEmail = true, $data = []) {
         
         $this->refreshOptions($data);
+        
+        $currentBalance = $this->getBalance($data);
+        $minimumBalance = Config::get('docmail.MinimumBalance');
 
-        $balance        = $this->gbp($this->getBalance($data));
-        $minimumBalance = $this->gbp(Config::get('docmail.MinimumBalance'));
-
-        $isMinimumMaintained = $balance > $minimumBalance;
+        $isMinimumMaintained = $currentBalance > $minimumBalance;
         
         if($sendEmail && !$isMinimumMaintained){
-            $this->sendBalanceInsufficentEmail();
+            $this->sendBalanceInsufficentEmail($currentBalance, $minimumBalance);
         }
 
         return [
             'isMinimumMaintained' => $isMinimumMaintained,
-            'balance'             => $balance,
+            'balance'             => $currentBalance,
         ];
     }
 
@@ -130,6 +138,10 @@ class Docmail extends DocmailAPIMutators {
      */
     private function sendBalanceInsufficentEmail($currentBalance, $minimumBalance)
     {
+        // Possibility of using changing currency in view
+        /*$currentBalance = $this->gbp($currentBalance);
+        $minimumBalance = $this->gbp($minimumBalance);*/
+
         View::addNamespace('docmail', __DIR__.'/views');
 
         return Mail::send('docmail::alert-email', compact('currentBalance', 'minimumBalance'), function($message) {
