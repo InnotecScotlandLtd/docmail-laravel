@@ -1,6 +1,8 @@
 <?php
 
-namespace Softlabs\Docmail;
+namespace Softlabs\Docmail\DocmailAPI;
+
+use Softlabs\Docmail\Helpers;
 
 abstract class DocmailAPIMutators
 {
@@ -66,6 +68,14 @@ abstract class DocmailAPIMutators
         $this->docmailApiSingleton()->processMailing();
 
         return $this;
+    }
+
+    public function sendToSingleAddress($data)
+    {
+        return $this->createMailing($data)
+                    ->addAddress()
+                    ->addTemplateFile()
+                    ->processMailing();
     }
 
     /**

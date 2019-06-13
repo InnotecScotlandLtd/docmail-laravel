@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
+use Softlabs\Docmail\DocmailAPI\DocmailAPIMutators;
 
 class Docmail extends DocmailAPIMutators {
 
@@ -63,18 +64,18 @@ class Docmail extends DocmailAPIMutators {
         
         $this->refreshOptions($data);
 
-        $balance        = self::gbp($this->getBalance($data));
-        $minimumBalance = self::gbp(Config::get('docmail.MinimumBalance'));
+        $balance        = $this->gbp($this->getBalance($data));
+        $minimumBalance = $this->gbp(Config::get('docmail.MinimumBalance'));
 
-        $isMimumumMaintained = $balance > $minimumBalance;
+        $isMinimumMaintained = $balance > $minimumBalance;
         
-        if($sendEmail && !$isMimumumMaintained){
+        if($sendEmail && !$isMinimumMaintained){
             $this->sendBalanceInsufficentEmail();
         }
 
         return [
-            'isMimumumMaintained' => $isMimumumMaintained,
-            'balance'     => $balance,
+            'isMinimumMaintained' => $isMinimumMaintained,
+            'balance'             => $balance,
         ];
     }
 
@@ -129,9 +130,9 @@ class Docmail extends DocmailAPIMutators {
      */
     private function sendBalanceInsufficentEmail($currentBalance, $minimumBalance)
     {
-        View::addNamespace('package', __DIR__.'/../views');
+        View::addNamespace('docmail', __DIR__.'/views');
 
-        return Mail::send('package::alert-email', compact('currentBalance', 'minimumBalance'), function($message) {
+        return Mail::send('docmail::alert-email', compact('currentBalance', 'minimumBalance'), function($message) {
             $message->to(Config::get('docmail.AlertEmail'))->subject('Docmail balance alert');
         });
     }

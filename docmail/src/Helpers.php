@@ -20,7 +20,7 @@ trait Helpers {
      * @param  string $returnVal A value to return if the conversion is impossible.
      * @return string The formatted GBP string.
      */
-    private static function gbp($data, $returnVal='-')
+    private function gbp($data, $returnVal='-')
     {
         if (is_null($data)) {
             return $returnVal;
@@ -31,5 +31,23 @@ trait Helpers {
         }
 
         return (is_numeric($data) ? '£' . number_format($data, 2) : $data);
+    }
+
+    /**
+     * Get information of a file
+     * @param  string $filePath
+     * @return array
+     */
+    private function fileInfo($filePath)
+    {
+        $pathInfo = pathinfo($filePath);
+
+        $file = [];
+
+        $file['name']      = $pathInfo['filename'];
+        $file['extension'] = $pathInfo['extension'];
+        $file['full_name'] = $pathInfo['filename'] . "." . $file['extension'];
+
+        return $file;
     }
 }
