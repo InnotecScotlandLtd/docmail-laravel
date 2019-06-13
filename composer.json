@@ -17,5 +17,12 @@
             "Softlabs\\Docmail\\": "src/"
         }
     },
-    "minimum-stability": "dev"
+    "minimum-stability": "dev",
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Softlabs\\Docmail\\DocmailServiceProvider"
+            ]
+        }
+    }
 }

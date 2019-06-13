@@ -37,7 +37,19 @@ This package is compatible with Laravel's auto-discovery feature. You can publis
 
 Package follows PSR-4 autoloading and the code is bootstrapped under `Softlabs\Docmail` namespace.
 
-This package 
+Sensible default have been set in the `config/docmail.php`. 
+
+This package reads the following values from .env:
+```
+# Your username on Docmail
+DOCMAIL_USERNAME=you@domain.co.uk
+
+# Your password on Docmail
+DOCMAIL_PASSWORD=ABC@123
+
+# Email where you wish to recieve payment alerts
+DOCMAIL_ALERT_EMAIL=you@domain.co.uk
+```
 
 ## Examples:
 
