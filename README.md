@@ -39,12 +39,12 @@ Package follows PSR-4 autoloading and the code is bootstrapped under `Softlabs\D
 
 This package 
 
-##Examples:
+## Examples:
 
 
 This package provides an easy interface to interact with the Docmail API:
 
-__Get Balance__
+### Get Balance
 
 ```
 $docMailService = new Softlabs\Docmail\Docmail
@@ -53,8 +53,8 @@ $docMailService->getBalance();
 
 Response(`float`): `99.00`
 
------
-__Check If Mimimum Balance is maintained__
+
+### Check If Mimimum Balance is maintained
 ```
 $docMailService = new Softlabs\Docmail\Docmail
 $docMailService->checkBalance();
@@ -66,11 +66,12 @@ Response:
 [
      "isMinimumMaintained" => false
      "balance" => 99.00
-]```
+]
+```
 
 *Note*: Email can be prevented by`$docMailService->checkBalance(false);`
 
-__Create  A Mailing__
+### Create  A Mailing
 
 ```
     $options = [
@@ -90,7 +91,7 @@ The response contains `mailingGUID` which is updated as a private property in th
 
 A helper function `$docMailService->getMailingGUID()` can be used to get this value.
 
-__Add Address__
+### Add Address
 
 ```
 $options = [
@@ -110,7 +111,7 @@ $docMailService->addAddress($options);
 ```
 
 
-__Add A Tempate File__
+### Add A Tempate File
 ```
 $options = [
     'mailingGUID'  => '06b64d3f-b7a0-4d9d-a237-a9949cb46f3e',
@@ -128,7 +129,7 @@ The response contains `templateGUID` which is updated as a private property in t
 A helper function `$docMailService->getTemplateGUID()` can be used to get this value.
 
 
-__Process Mailing__
+### Process Mailing
 ```
 $options =  [
     'mailingGUID'        => '06b64d3f-b7a0-4d9d-a237-a9949cb46f3e',
@@ -144,7 +145,9 @@ $docMailService = new Softlabs\Docmail\Docmail;
 $docMailService->processMailing($options)
 ```
 
-#Method Chaining
+---
+
+## Method Chaining
 
 Package also support method chaining:
 ```
