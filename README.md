@@ -35,9 +35,13 @@ This package is compatible with Laravel's auto-discovery feature. You can publis
 
 `php artisan vendor:publish --provider="Softlabs\Docmail\DocmailServiceProvider"`
 
-Package follows PSR-4 autoloading and the code is bootstrapped under `Softlabs\Docmail` namespace.
+This publishes:
+ - default `config` file at `/config/docmail.php`
+ - default `views` at `/resources/views/vendor/docmail`
 
-Sensible default have been set in the `config/docmail.php`. 
+Sensible default have been set in both the files, that you can customise further. 
+
+Package follows PSR-4 autoloading and the code is bootstrapped under `Softlabs\Docmail` namespace.
 
 This package reads the following values from .env:
 ```
@@ -66,8 +70,11 @@ This package provides an easy interface to interact with the Docmail API:
 ### Get Balance
 
 ```
-$docMailService = new Softlabs\Docmail\Docmail
+$docMailService = new Softlabs\Docmail\Docmail;
 $docMailService->getBalance();
+
+// Another way
+(new new Softlabs\Docmail\Docmail)->getBalance();
 ```
 
 Response(`float`): `99.00`
@@ -78,7 +85,7 @@ Response(`float`): `99.00`
 $docMailService = new Softlabs\Docmail\Docmail
 $docMailService->checkBalance();
 ```
-In case a user fails to maintain the minimum balance, a notification email is sent to the user. 
+In case a user fails to maintain the minimum balance, a notification email is sent to the user. Package uses your email settings from .env file
 
 Response:
 ```
