@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'Username'          => 'DocmailUsername',
-    'Password'          => 'DocmailPassword',
-    "TestMode"          => true,
+    'Username'          => env('DOCMAIL_USERNAME'),
+    'Password'          => env('DOCMAIL_PASSWORD'),
+    "TestMode"          => env('DOCMAIL_TESTMODE', true),
     'Wsdl_test'         => "https://www.cfhdocmail.com/TestAPI2/DMWS.asmx?WSDL",
     'Wsdl_live'         => "https://www.cfhdocmail.com/LiveAPI2/DMWS.asmx?WSDL",
     "Timeout"           => 240,
@@ -16,5 +16,5 @@ return [
     
     'DespatchASAP'      => true,
     'MinimumBalance'    => 200,
-    'AlertEmail'        => "email@domain.co.uk"
+    'AlertEmail'        => env('DOCMAIL_ALERTEMAIL'),
 ];

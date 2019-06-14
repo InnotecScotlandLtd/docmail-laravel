@@ -33,7 +33,7 @@ Run `composer update`
 This package is compatible with Laravel's auto-discovery feature. You can publish the configuration files by using command:
 
 
-`php artisan vendor:publish --provider=Softlabs\Docmail\DocmailServiceProvider`
+`php artisan vendor:publish --provider="Softlabs\Docmail\DocmailServiceProvider"`
 
 Package follows PSR-4 autoloading and the code is bootstrapped under `Softlabs\Docmail` namespace.
 
@@ -48,7 +48,14 @@ DOCMAIL_USERNAME=you@domain.co.uk
 DOCMAIL_PASSWORD=ABC@123
 
 # Email where you wish to recieve payment alerts
-DOCMAIL_ALERT_EMAIL=you@domain.co.uk
+DOCMAIL_ALERTEMAIL=you@domain.co.uk
+
+# Connect to live/test urls
+DOCMAIL_TESTMODE=true
+
+# When true, gets connected to https://www.cfhdocmail.com/TestAPI2/DMWS.asmx?WSDL
+# WHen false, gets connected to https://www.cfhdocmail.com/LiveAPI2/DMWS.asmx?WSDL
+
 ```
 
 ## Examples:
